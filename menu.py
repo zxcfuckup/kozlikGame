@@ -23,25 +23,25 @@ class Menu:
         center_x = w // 2
         center_y = h // 2
 
-        # ---- PLAY (большая по центру) ----
+        # PLAY (большая по центру)
         self.play_button = Button(
             image_path="contents/buttons/PLAY.png",
             center_pos=(center_x, center_y - 40),
             size=play_size,
-            hitbox_padding=(50,30,40,10)
+            hitbox_padding=(60,200,165,45)
         )
         self.play_hovered = False
 
-        # ---- SETTING (меньше, под PLAY) ----
+        # SETTING (меньше, под PLAY)
         self.settings_button = Button(
             image_path="contents/buttons/SETTING.png",
             center_pos=(center_x - 100, center_y + 60),
             size=(500, 250),
-            hitbox_padding=(30,20,30,20)
+            hitbox_padding=(45,90,160,25)
         )
         self.settings_hovered = False
 
-        # ---- EXIT (правый верхний угол) ----
+        # EXIT (правый верхний угол)
         self.exit_button = Button(
             image_path="contents/buttons/EXIT.png",
             center_pos=(
@@ -49,7 +49,7 @@ class Menu:
                 exit_size[1] // 2 + padding
             ),
             size=exit_size,
-            hitbox_padding=(40,20,40,20)
+            hitbox_padding=(30,50,40,20)
         )
         self.exit_hovered = False
 
@@ -89,11 +89,12 @@ class Menu:
 
     def draw_button(self, button, hovered):
         if hovered:
-            # увеличиваем кнопку при наведении
+            # увеличивает кнопку при наведении
             scaled_img = pygame.transform.smoothscale(
                 button.image,
                 (int(button.rect.width * self.hover_scale),
                  int(button.rect.height * self.hover_scale))
+
             )
             scaled_rect = scaled_img.get_rect(center=button.rect.center)
             self.screen.blit(scaled_img, scaled_rect)

@@ -21,8 +21,6 @@ class Button:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
-        # Для дебага: показать хитбокс
-        # pygame.draw.rect(screen, (255,0,0), self.hitbox, 2)
 
     def is_clicked(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
