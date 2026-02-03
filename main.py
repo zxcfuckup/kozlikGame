@@ -66,7 +66,6 @@ images_dict = {
     "fake": pygame.transform.smoothscale(pygame.image.load("contents/slabs/cloudFake.png").convert_alpha(), (100, 80)),
     "grass": pygame.transform.smoothscale(pygame.image.load("images/grass.png").convert_alpha(), (120, 100))
 }
-
 platforms = []
 hitbox_width, hitbox_height = 70, 15
 
