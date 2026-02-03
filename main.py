@@ -10,23 +10,23 @@ pygame.init()
 pygame.mixer.init()
 
 # ------------------ НАСТРОЙКИ ОКНА ------------------
-# DESIGN (виртуальное) разрешение — не трогает логику, рисует в этих координатах
+#  разрешение — не трогает логику, рисует в этих координатах
 DESIGN_W, DESIGN_H = 400, 800
-# оставляет переменные, чтобы старый код использовал DESIGN координаты
+# оставляет переменные, чтобы старый код использовал координаты
 screen_width = DESIGN_W
 screen_height = DESIGN_H
 
-# получает реальное окно (для теста на ПК - RESIZABLE; на телефоне можно сделать FULLSCREEN)
+# получает реальное окно
 display_info = pygame.display.Info()
 actual_w, actual_h = display_info.current_w, display_info.current_h
 screen = pygame.display.set_mode((actual_w, actual_h), pygame.RESIZABLE)
 pygame.display.set_caption("Приключение козлика")
 clock = pygame.time.Clock()
 
-# создаёт виртуальный холст (на нем рисуем всю игру в design-координатах)
+# создаёт виртуальный холст
 game_surface = pygame.Surface((DESIGN_W, DESIGN_H)).convert_alpha()
 
-# helper для масштабирования и центрирования (letterbox/pillarbox)
+# helper для масштабирования и центрирования
 def compute_scale_and_offset(window_w, window_h, design_w=DESIGN_W, design_h=DESIGN_H):
     scale = min(window_w / design_w, window_h / design_h)
     sw = int(design_w * scale)
@@ -48,7 +48,7 @@ def design_to_real(dx, dy):
     return rx, ry
 
 # ------------------ ЗВУКИ ------------------
-# pygame.mixer.init() уже вызван выше
+
 jump_sound = pygame.mixer.Sound("contents/sound/jumpSound.wav")
 
 # меню

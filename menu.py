@@ -26,7 +26,7 @@ class Menu:
             "contents/buttons/PLAY.png",
             (center_x, center_y - 40),
             play_size,
-            hitbox_padding=(60, 200, 165, 45)
+            hitbox_padding=(60, 243, 165, 70)
         )
 
         # ---- SETTINGS ----
@@ -42,7 +42,7 @@ class Menu:
             "contents/buttons/EXIT.png",
             (w - exit_size[0] // 2 - 15, exit_size[1] // 2 + 15),
             exit_size,
-            hitbox_padding=(100, 100, 50, 140)
+            hitbox_padding=(20, 65, 170, 365)
         )
 
         # ---- DEBUG BUTTON ----
