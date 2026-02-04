@@ -1,0 +1,87 @@
+{
+  "PLAY": {
+    "image_path": "contents/buttons/PLAY.png",
+    "image_center": [
+      264,
+      354
+    ],
+    "image_size": [
+      414,
+      294
+    ],
+    "hitbox_rect": [
+      109,
+      258,
+      172,
+      88
+    ]
+  },
+  "SETTING": {
+    "image_path": "contents/buttons/SETTING.png",
+    "image_center": [
+      289,
+      654
+    ],
+    "image_size": [
+      292,
+      218
+    ],
+    "hitbox_rect": [
+      151,
+      553,
+      276,
+      202
+    ]
+  },
+  "EXIT": {
+    "image_path": "contents/buttons/EXIT.png",
+    "image_center": [
+      264,
+      108
+    ],
+    "image_size": [
+      306,
+      210
+    ],
+    "hitbox_rect": [
+      338,
+      23,
+      42,
+      42
+    ]
+  },
+  "SHOP": {
+    "image_path": "contents/buttons/SHOP.png",
+    "image_center": [
+      124,
+      645
+    ],
+    "image_size": [
+      154,
+      80
+    ],
+    "hitbox_rect": [
+      53,
+      611,
+      142,
+      68
+    ]
+  },
+  "DEBUG": {
+    "image_path": "contents/buttons/debug.png",
+    "image_center": [
+      40,
+      40
+    ],
+    "image_size": [
+      70,
+      70
+    ],
+    "hitbox_rect": [
+      5,
+      5,
+      70,
+      70
+    ]
+  }
+}
