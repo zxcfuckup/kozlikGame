@@ -5,14 +5,14 @@ from menu import Menu, DESIGN_W, DESIGN_H
 pygame.init()
 BASE = os.path.dirname(__file__)
 
-# window
+# окно
 info = pygame.display.Info()
 WIN_W, WIN_H = info.current_w, info.current_h
 screen = pygame.display.set_mode((WIN_W, WIN_H), pygame.RESIZABLE)
 pygame.display.set_caption("Layout Editor")
 clock = pygame.time.Clock()
 
-# design surface
+# поверхность дизайна
 design_surface = pygame.Surface((DESIGN_W, DESIGN_H)).convert_alpha()
 
 def compute_scale_and_offset(window_w, window_h):
@@ -31,16 +31,16 @@ def real_to_design(mx, my):
 def design_to_real(dx, dy):
     return int(dx*scale + offset_x), int(dy*scale + offset_y)
 
-# menu
+# меню
 menu = Menu()
 buttons = [menu.play_button, menu.settings_button, menu.exit_button, menu.shop_button, menu.debug_button]
 
-dragging = None   # (btn, mode, start_mx, start_my, start_x, start_y)
+dragging = None
 preview_horizontal = False
 
-print("Editor running. Controls: SHIFT-image move | CTRL-hitbox move | Shift/CTRL + arrows resize | Ctrl+S save | H preview")
+print("Editor running. Controls: SHIFT-image move | CTRL-hitbox move | Shift/CTRL + arrows resize | Ctrl+S save")
 
-# load existing layout if present
+# загрузка существующего макета
 menu.load_layout_if_exists()
 
 while True:
@@ -70,7 +70,7 @@ while True:
             mods = pygame.key.get_mods()
             shift = mods & pygame.KMOD_SHIFT
             ctrl = mods & pygame.KMOD_CTRL
-            # check topmost first
+
             for btn in buttons[::-1]:
                 if shift and btn.is_image_hit((mx,my)):
                     dragging = (btn, "image", mx, my, btn.rect.x, btn.rect.y)
@@ -82,7 +82,7 @@ while True:
         if ev.type == pygame.MOUSEBUTTONUP and ev.button == 1:
             dragging = None
 
-    # dragging movement
+    # перетаскивание изоб.
     if dragging:
         btn, mode, start_mx, start_my, start_x, start_y = dragging
         dx = mx - start_mx
@@ -96,7 +96,7 @@ while True:
             btn.hitbox_rect.y = int(start_y + dy)
         dragging = (btn, mode, mx, my, start_x + dx, start_y + dy)
 
-    # keyboard resizing
+    # изменение размера
     keys = pygame.key.get_pressed()
     mods = pygame.key.get_mods()
     if mods & pygame.KMOD_SHIFT:
@@ -119,7 +119,7 @@ while True:
                 if btn.is_image_hit((mx,my)):
                     btn.resize_image(-6, 0)
     if mods & pygame.KMOD_CTRL:
-        # hitbox resize
+        # изменение размера хитбокса
         step = 6
         if keys[pygame.K_UP]:
             for btn in buttons:
@@ -138,9 +138,9 @@ while True:
                 if btn.is_hitbox_hit((mx,my)):
                     btn.resize_hitbox(-6, 0)
 
-    # draw to design surface
+    # рисование на поверхности дизайна
     design_surface.fill((30,30,30))
-    # background
+    # фон
     bg_path = os.path.join(BASE, "contents/backgroundsF/menu.jpg")
     if os.path.exists(bg_path):
         try:
@@ -150,15 +150,15 @@ while True:
         except:
             pass
 
-    # draw buttons and hitboxes (always show hitbox in editor)
+    # отрисовывка кнопки и хитбокса
     for btn in buttons:
-        # ensure image fits rect
+        # проверка что изображение помещается в прямоугольник
         if (btn.rect.width, btn.rect.height) != (btn.image.get_width(), btn.image.get_height()):
             btn.load_image((btn.rect.width, btn.rect.height))
         design_surface.blit(btn.image, btn.rect)
         pygame.draw.rect(design_surface, (255,0,0), btn.hitbox_rect, 2)
 
-    # scale to window and blit (with optional horizontal preview)
+    # масштабирование для окна и отрисовка
     scaled = pygame.transform.smoothscale(design_surface, (scaled_w, scaled_h))
     screen.fill((0,0,0))
     if preview_horizontal:
@@ -170,7 +170,7 @@ while True:
     else:
         screen.blit(scaled, (offset_x, offset_y))
 
-    # HUD
+    # элементы интерфейса
     font = pygame.font.Font(None, 20)
     hud = "SHIFT: image move | CTRL: hitbox move | Ctrl+S save | H rotate preview"
     screen.blit(font.render(hud, True, (255,255,0)), (10,10))

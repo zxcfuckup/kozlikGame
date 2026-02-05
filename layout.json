@@ -19,18 +19,18 @@
   "SETTING": {
     "image_path": "contents/buttons/SETTING.png",
     "image_center": [
-      289,
-      654
+      271,
+      354
     ],
     "image_size": [
-      292,
-      218
+      412,
+      338
     ],
     "hitbox_rect": [
-      151,
-      553,
-      276,
-      202
+      201,
+      354,
+      84,
+      40
     ]
   },
   "EXIT": {
@@ -53,18 +53,18 @@
   "SHOP": {
     "image_path": "contents/buttons/SHOP.png",
     "image_center": [
-      124,
-      645
+      293,
+      354
     ],
     "image_size": [
-      154,
-      80
+      496,
+      344
     ],
     "hitbox_rect": [
-      53,
-      611,
-      142,
-      68
+      105,
+      354,
+      94,
+      44
     ]
   },
   "DEBUG": {
