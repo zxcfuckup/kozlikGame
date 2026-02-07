@@ -83,5 +83,39 @@
       70,
       70
     ]
+  },
+  "LOGO": {
+    "image_path": "contents/buttons/logo.png",
+    "image_center": [
+      189,
+      194
+    ],
+    "image_size": [
+      284,
+      242
+    ],
+    "hitbox_rect": [
+      81,
+      102,
+      230,
+      128
+    ]
+  },
+  "KOZLIK": {
+    "image_path": "contents/buttons/KOZLIKt.png",
+    "image_center": [
+      130,
+      517
+    ],
+    "image_size": [
+      672,
+      432
+    ],
+    "hitbox_rect": [
+      168,
+      484,
+      222,
+      192
+    ]
   }
 }

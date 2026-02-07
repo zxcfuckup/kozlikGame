@@ -5,6 +5,7 @@ import math
 from player import Player
 from game_platform import Platform
 from coin import Coin
+from sound import SoundManager  # <- добавили
 
 # ИНИЦИАЛИЗАЦИЯ PYGAME
 pygame.init()
@@ -16,7 +17,6 @@ WIN_W, WIN_H = display_info.current_w, display_info.current_h
 screen = pygame.display.set_mode((WIN_W, WIN_H), pygame.RESIZABLE)
 pygame.display.set_caption("Приключение козлика")
 
-
 from menu import Menu, DESIGN_W, DESIGN_H
 
 # ВИРТУАЛЬНЫЙ ХОЛСТ
@@ -24,7 +24,7 @@ game_surface = pygame.Surface((DESIGN_W, DESIGN_H)).convert_alpha()
 
 clock = pygame.time.Clock()
 
-#  Функции масштабирования
+# Функции масштабирования
 def compute_scale_and_offset(window_w, window_h, design_w=DESIGN_W, design_h=DESIGN_H):
     scale = min(window_w / design_w, window_h / design_h)
     sw = int(design_w * scale)
@@ -45,18 +45,16 @@ def design_to_real(dx, dy):
     ry = int(dy * scale + offset_y)
     return rx, ry
 
-#  ЗВУК
-try:
-    jump_sound = pygame.mixer.Sound("contents/sound/jumpSound.wav")
-except Exception:
-    jump_sound = None
+# --- ЗВУК ---
+sound = SoundManager()
+sound.play_music(sound.menu_music)  # стартуем с меню
 
-#  МЕНЮ
+# МЕНЮ
 menu = Menu()
 in_menu = True
 menu.load_layout_if_exists()
 
-#  ГРАФИКА
+# ГРАФИКА
 bg = pygame.image.load("images/bg.jpg").convert_alpha()
 bg = pygame.transform.smoothscale(bg, (DESIGN_W, DESIGN_H))
 
@@ -67,7 +65,7 @@ images_dict = {
     "grass": pygame.transform.smoothscale(pygame.image.load("images/grass.png").convert_alpha(), (120,100))
 }
 
-#  Состояние игры
+# Состояние игры
 hitbox_width, hitbox_height = 70, 15
 platforms = []
 coins = []
@@ -80,7 +78,7 @@ cursor = pygame.transform.scale(pygame.image.load("images/cursor.png").convert_a
 pygame.mouse.set_visible(False)
 soft_x, soft_y = 200.0, 400.0
 
-#  плавность курсора
+# плавность курсора
 LERP_SPEED = 0.5
 
 score = 0
@@ -92,7 +90,7 @@ floating_texts = []
 
 player = None
 
-#  Функции спавна/сброса
+# Функции спавна/сброса
 def spawn_platform(y, last_x):
     is_fake = random.random() < 0.15
     new_x = max(20, min(last_x + random.randint(-180, 180), DESIGN_W - hitbox_width - 20))
@@ -174,16 +172,19 @@ while running:
     soft_x += (mx_design - soft_x) * LERP_SPEED
     soft_y += (my_design - soft_y) * LERP_SPEED
 
+    # --- МЕНЮ И ИГРА ---
     if in_menu:
-        #  ЛОГИКА МЕНЮ
+        # ЛОГИКА МЕНЮ
         menu.draw(game_surface, debug=False)
+        sound.play_music(sound.menu_music)  # музыка меню
         if menu.start_game:
             in_menu = False
             menu.start_game = False
             menu.load_layout_if_exists()
+            sound.play_music(sound.game_music)  # запускаем музыку уровня
             continue
     else:
-        #  ВСЯ ИГРОВАЯ ЛОГИКА
+        # ВСЯ ИГРОВАЯ ЛОГИКА
         keys = pygame.key.get_pressed()
         player.update(keys, DESIGN_W)
         hitbox = player.get_hitbox()
@@ -225,8 +226,9 @@ while running:
         if player.y > DESIGN_H:
             game_over = True
             best_score = max(best_score, score)
+            sound.play_music(sound.menu_music)  # проиграл → музыка меню
 
-        #  ОТРИСОВКА ИГРЫ
+        # ОТРИСОВКА ИГРЫ
         game_surface.blit(bg, (0, 0))
         for plat in platforms: plat.draw(game_surface, 0)
         for c in coins: c.draw(game_surface, 0)
@@ -254,11 +256,13 @@ while running:
         if keys[pygame.K_ESCAPE]:
             in_menu = True
             menu.start_game = False
+            sound.play_music(sound.menu_music)  # ESC → музыка меню
+
         if game_over and keys[pygame.K_SPACE]:
             reset_game()
+            sound.play_music(sound.game_music)  # рестарт уровня → музыка уровня
 
-    #  ФИНАЛЬНЫЙ ВЫВОД НА ЭКРАН
-
+    # --- ФИНАЛЬНЫЙ ВЫВОД НА ЭКРАН ---
     scaled = pygame.transform.scale(game_surface, (scaled_w, scaled_h))
     screen.fill((0, 0, 0))
     screen.blit(scaled, (offset_x, offset_y))

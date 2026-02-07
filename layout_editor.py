@@ -33,7 +33,17 @@ def design_to_real(dx, dy):
 
 # меню
 menu = Menu()
-buttons = [menu.play_button, menu.settings_button, menu.exit_button, menu.shop_button, menu.debug_button]
+
+# добавляем новые кнопки в редактор
+buttons = [
+    menu.play_button,
+    menu.settings_button,
+    menu.exit_button,
+    menu.shop_button,
+    menu.debug_button,
+    menu.logo,      # новая кнопка Logo
+    menu.kozlik     # новая кнопка KOZLIKt
+]
 
 dragging = None
 preview_horizontal = False
@@ -82,7 +92,7 @@ while True:
         if ev.type == pygame.MOUSEBUTTONUP and ev.button == 1:
             dragging = None
 
-    # перетаскивание изоб.
+    # перетаскивание изображения или хитбокса
     if dragging:
         btn, mode, start_mx, start_my, start_x, start_y = dragging
         dx = mx - start_mx
@@ -105,38 +115,38 @@ while True:
         if keys[pygame.K_UP]:
             for btn in buttons:
                 if btn.is_image_hit((mx,my)):
-                    btn.resize_image(0, -step * -1)  # increase height
+                    btn.resize_image(0, -step)
         if keys[pygame.K_DOWN]:
             for btn in buttons:
                 if btn.is_image_hit((mx,my)):
-                    btn.resize_image(0, -6)
+                    btn.resize_image(0, step)
         if keys[pygame.K_RIGHT]:
             for btn in buttons:
                 if btn.is_image_hit((mx,my)):
-                    btn.resize_image(6, 0)
+                    btn.resize_image(step, 0)
         if keys[pygame.K_LEFT]:
             for btn in buttons:
                 if btn.is_image_hit((mx,my)):
-                    btn.resize_image(-6, 0)
+                    btn.resize_image(-step, 0)
     if mods & pygame.KMOD_CTRL:
         # изменение размера хитбокса
         step = 6
         if keys[pygame.K_UP]:
             for btn in buttons:
                 if btn.is_hitbox_hit((mx,my)):
-                    btn.resize_hitbox(0, -step * -1)
+                    btn.resize_hitbox(0, -step)
         if keys[pygame.K_DOWN]:
             for btn in buttons:
                 if btn.is_hitbox_hit((mx,my)):
-                    btn.resize_hitbox(0, -6)
+                    btn.resize_hitbox(0, step)
         if keys[pygame.K_RIGHT]:
             for btn in buttons:
                 if btn.is_hitbox_hit((mx,my)):
-                    btn.resize_hitbox(6, 0)
+                    btn.resize_hitbox(step, 0)
         if keys[pygame.K_LEFT]:
             for btn in buttons:
                 if btn.is_hitbox_hit((mx,my)):
-                    btn.resize_hitbox(-6, 0)
+                    btn.resize_hitbox(-step, 0)
 
     # рисование на поверхности дизайна
     design_surface.fill((30,30,30))
@@ -150,9 +160,9 @@ while True:
         except:
             pass
 
-    # отрисовывка кнопки и хитбокса
+    # отрисовка кнопок и хитбоксов
     for btn in buttons:
-        # проверка что изображение помещается в прямоугольник
+        # проверка что изображение подгружено в нужный размер
         if (btn.rect.width, btn.rect.height) != (btn.image.get_width(), btn.image.get_height()):
             btn.load_image((btn.rect.width, btn.rect.height))
         design_surface.blit(btn.image, btn.rect)
@@ -170,9 +180,9 @@ while True:
     else:
         screen.blit(scaled, (offset_x, offset_y))
 
-    # элементы интерфейса
+    # подсказки сверху (HUD)
     font = pygame.font.Font(None, 20)
-    hud = "SHIFT: image move | CTRL: hitbox move | Ctrl+S save | H rotate preview"
+    hud = "SHIFT: image move | CTRL: hitbox move | Shift/CTRL + arrows resize | Ctrl+S save | H toggle preview"
     screen.blit(font.render(hud, True, (255,255,0)), (10,10))
 
     pygame.display.flip()
