@@ -1,4 +1,3 @@
-
 import pygame
 import os
 
@@ -11,19 +10,18 @@ class Button:
     def __init__(self, image_path, center_pos, size, hitbox_padding=(0,0,0,0)):
 
         self.image_path = image_path
+        self.hitbox_padding = hitbox_padding
         self.load_image(size)
         self.rect = self.image.get_rect(center=tuple(center_pos))
-        self.hitbox_padding = hitbox_padding
         self._update_hitbox_from_padding()
 
     def load_image(self, size=None):
         if size is None:
-            size = (self.image.get_width(), self.image.get_height()) if hasattr(self, "image") else (100,50)
+            size = (100, 50)
         try:
             img = pygame.image.load(_full(self.image_path)).convert_alpha()
             self.image = pygame.transform.smoothscale(img, (int(size[0]), int(size[1])))
         except Exception:
-
             self.image = pygame.Surface((int(size[0]), int(size[1])), pygame.SRCALPHA)
             self.image.fill((120,120,120,255))
 
@@ -70,7 +68,7 @@ class Button:
         self.hitbox_rect.width = max(5, int(self.hitbox_rect.width + dw))
         self.hitbox_rect.height = max(5, int(self.hitbox_rect.height + dh))
 
-    #  сериализация
+    # сериализация
     def to_dict(self):
         return {
             "image_path": self.image_path,
@@ -82,7 +80,6 @@ class Button:
 
     @classmethod
     def from_dict(cls, data):
-        # robust keys
         img = data.get("image_path") or data.get("image") or "contents/buttons/debug.png"
         center = tuple(data.get("image_center") or data.get("center") or (200,400))
         size = tuple(data.get("image_size") or data.get("size") or (100,50))

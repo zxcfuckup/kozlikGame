@@ -4,44 +4,53 @@ import os
 
 BASE = os.path.dirname(__file__)
 
+def _full(path):
+    return os.path.join(BASE, path)
+
 class SoundManager:
     def __init__(self):
         pygame.mixer.init()
-        # Фоновая музыка
-        self.menu_music = self.load_music("contents/sound/menu.wav")
-        self.game_music = self.load_music("contents/sound/Game1.wav")
-        # Эффекты
-        self.jump_sound = self.load_sound("contents/sound/jumpSound.wav")
-        # Статус
+
+        # Пути к музыке
+        self.menu_music = _full("contents/sound/menu.wav")
+        self.game_music = _full("contents/sound/Game1.wav")
+
         self.current_music = None
 
-    def load_music(self, path):
-        if os.path.exists(path):
-            try:
-                return pygame.mixer.Sound(path)
-            except Exception as e:
-                print(f"Ошибка загрузки музыки {path}: {e}")
-        return None
+        # Громкость (0.0 - 1.0)
+        self.music_volume = 1.0
+        self.sfx_volume = 1.0
 
-    def load_sound(self, path):
-        if os.path.exists(path):
-            try:
-                return pygame.mixer.Sound(path)
-            except Exception as e:
-                print(f"Ошибка загрузки звука {path}: {e}")
-        return None
+        # Пример SFX
+        self.jump_sound = pygame.mixer.Sound(_full("contents/sound/jumpSound.wav"))
+        self.jump_sound.set_volume(self.sfx_volume)
 
-    def play_music(self, music, loops=-1):
-        if music and self.current_music != music:
-            self.stop_music()
-            music.play(loops)
-            self.current_music = music
+    # Воспроизвести музыку, зациклить
+    def play_music(self, path):
+        try:
+            # Если уже играет эта музыка — ничего не делаем
+            if self.current_music == path and pygame.mixer.music.get_busy():
+                return
 
-    def stop_music(self):
-        if self.current_music:
-            self.current_music.stop()
-            self.current_music = None
+            pygame.mixer.music.load(path)
+            pygame.mixer.music.play(-1)  # бесконечный цикл
+            pygame.mixer.music.set_volume(self.music_volume)
+            self.current_music = path
+        except Exception as e:
+            print("Ошибка загрузки музыки:", e)
 
-    def play_jump(self):
-        if self.jump_sound:
-            self.jump_sound.play()
+    # Изменяем громкость музыки
+    def set_music_volume(self, volume):
+        self.music_volume = max(0.0, min(1.0, volume))
+        pygame.mixer.music.set_volume(self.music_volume)
+
+    # Изменяем громкость звуков
+    def set_sfx_volume(self, volume):
+        self.sfx_volume = max(0.0, min(1.0, volume))
+        self.jump_sound.set_volume(self.sfx_volume)
+
+    # Воспроизвести эффект
+    def play_sfx(self, sfx_sound):
+        if isinstance(sfx_sound, pygame.mixer.Sound):
+            sfx_sound.set_volume(self.sfx_volume)
+            sfx_sound.play()

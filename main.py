@@ -1,277 +1,299 @@
+# main.py
 import pygame
 import random
 import sys
-import math
+import os
 from player import Player
 from game_platform import Platform
 from coin import Coin
-from sound import SoundManager  # <- добавили
+from sound import SoundManager
+from menu import Menu, DESIGN_W, DESIGN_H
 
-# ИНИЦИАЛИЗАЦИЯ PYGAME
+# -----------------------
+# Инициализация
+# -----------------------
 pygame.init()
-pygame.mixer.init()
+try:
+    pygame.mixer.init()
+except Exception as e:
+    print("Warning: mixer init failed:", e)
 
-# --- ОКНО: set_mode должен быть до любых convert_alpha() ---
 display_info = pygame.display.Info()
-WIN_W, WIN_H = display_info.current_w, display_info.current_h
+WIN_W, WIN_H = max(800, display_info.current_w), max(600, display_info.current_h)
 screen = pygame.display.set_mode((WIN_W, WIN_H), pygame.RESIZABLE)
 pygame.display.set_caption("Приключение козлика")
 
-from menu import Menu, DESIGN_W, DESIGN_H
-
-# ВИРТУАЛЬНЫЙ ХОЛСТ
 game_surface = pygame.Surface((DESIGN_W, DESIGN_H)).convert_alpha()
-
 clock = pygame.time.Clock()
 
-# Функции масштабирования
+
 def compute_scale_and_offset(window_w, window_h, design_w=DESIGN_W, design_h=DESIGN_H):
     scale = min(window_w / design_w, window_h / design_h)
-    sw = int(design_w * scale)
-    sh = int(design_h * scale)
+    sw = max(1, int(design_w * scale))
+    sh = max(1, int(design_h * scale))
     offset_x = (window_w - sw) // 2
     offset_y = (window_h - sh) // 2
     return scale, offset_x, offset_y, sw, sh
 
-scale, offset_x, offset_y, scaled_w, scaled_h = compute_scale_and_offset(WIN_W, WIN_H)
 
-def real_to_design(mx, my):
+def real_to_design(mx, my, scale, offset_x, offset_y):
     dx = (mx - offset_x) / scale
     dy = (my - offset_y) / scale
     return dx, dy
 
-def design_to_real(dx, dy):
+
+def design_to_real(dx, dy, scale, offset_x, offset_y):
     rx = int(dx * scale + offset_x)
     ry = int(dy * scale + offset_y)
     return rx, ry
 
-# --- ЗВУК ---
-sound = SoundManager()
-sound.play_music(sound.menu_music)  # стартуем с меню
 
-# МЕНЮ
+# -----------------------
+# Ресурсы и Шрифты
+# -----------------------
+sound = SoundManager()
+try:
+    if hasattr(sound, "menu_music") and sound.menu_music:
+        sound.play_music(sound.menu_music)
+except:
+    pass
+
 menu = Menu()
 in_menu = True
-menu.load_layout_if_exists()
 
-# ГРАФИКА
-bg = pygame.image.load("images/bg.jpg").convert_alpha()
-bg = pygame.transform.smoothscale(bg, (DESIGN_W, DESIGN_H))
 
+def safe_load_image(path, size=None):
+    try:
+        img = pygame.image.load(path).convert_alpha()
+        if size: img = pygame.transform.smoothscale(img, size)
+        return img
+    except:
+        return pygame.Surface(size if size else (100, 100))
+
+
+bg = safe_load_image(os.path.join("images", "bg.jpg"), (DESIGN_W, DESIGN_H))
 images_dict = {
-    "cloudB": pygame.transform.smoothscale(pygame.image.load("images/cloudB.png").convert_alpha(), (120,100)),
-    "cloudM": pygame.transform.smoothscale(pygame.image.load("images/cloudM.png").convert_alpha(), (120,100)),
-    "fake": pygame.transform.smoothscale(pygame.image.load("contents/slabs/cloudFake.png").convert_alpha(), (100,80)),
-    "grass": pygame.transform.smoothscale(pygame.image.load("images/grass.png").convert_alpha(), (120,100))
+    "cloudB": safe_load_image(os.path.join("images", "cloudB.png"), (120, 100)),
+    "cloudM": safe_load_image(os.path.join("images", "cloudM.png"), (120, 100)),
+    "grass": safe_load_image(os.path.join("images", "grass.png"), (120, 100)),
+    "fake": safe_load_image(os.path.join("contents", "slabs", "cloudFake.png"), (100, 80))
 }
 
-# Состояние игры
-hitbox_width, hitbox_height = 70, 15
-platforms = []
-coins = []
-coin_count = 0
 
-font = pygame.font.Font("fonts/GravitasOne-Regular.ttf", 24)
-small_font = pygame.font.Font("fonts/GravitasOne-Regular.ttf", 18)
+def load_game_font(size):
+    path = os.path.join("fonts", "GravitasOne-Regular.ttf")
+    if os.path.exists(path):
+        try:
+            return pygame.font.Font(path, size)
+        except:
+            pass
+    return pygame.font.SysFont("Arial", size, bold=True)
 
-cursor = pygame.transform.scale(pygame.image.load("images/cursor.png").convert_alpha(), (32,32))
-pygame.mouse.set_visible(False)
-soft_x, soft_y = 200.0, 400.0
 
-# плавность курсора
-LERP_SPEED = 0.5
+main_font = load_game_font(26)
+small_font = load_game_font(18)
+big_font = load_game_font(50)
 
-score = 0
-best_score = 0
-combo = 0
-camera_trigger_y = 300
-game_over = False
-floating_texts = []
+cursor_img = safe_load_image(os.path.join("images", "cursor.png"), (32, 32))
 
+# -----------------------
+# Логика игры
+# -----------------------
+hitbox_w, hitbox_h = 70, 15
+platforms, coins, floating_texts = [], [], []
+score, best_score, coin_count, combo = 0, 0, 0, 0
+game_speed, game_over = 1.0, False
 player = None
+camera_trigger = 350
 
-# Функции спавна/сброса
+
 def spawn_platform(y, last_x):
-    is_fake = random.random() < 0.15
-    new_x = max(20, min(last_x + random.randint(-180, 180), DESIGN_W - hitbox_width - 20))
-    plat = Platform(new_x, y, hitbox_width, hitbox_height, images_dict, fake=is_fake)
-    platforms.append(plat)
+    is_fake = random.random() < 0.20
+    side = random.choice([-1, 1])
+    offset = side * random.randint(110, 230)
+    new_x = last_x + offset
+
+    if new_x < 20: new_x = random.randint(30, 150)
+    if new_x > DESIGN_W - hitbox_w - 20: new_x = DESIGN_W - hitbox_w - random.randint(30, 150)
+
+    main_p = Platform(new_x, y, hitbox_w, hitbox_h, images_dict, fake=False)
+    platforms.append(main_p)
+
+    if random.random() < 0.15:
+        coins.append(Coin(main_p.rect.centerx - 16, main_p.get_visual_top() - 36))
+
     if is_fake:
-        offset = random.choice([-100, 100])
-        safe_x = max(20, min(new_x + offset, DESIGN_W - hitbox_width - 20))
-        safe_plat = Platform(safe_x, y, hitbox_width, hitbox_height, images_dict, fake=False)
-        platforms.append(safe_plat)
-        spawn_coin(safe_plat)
-        return safe_x
-    spawn_coin(plat)
+        fake_y = y + random.choice([-60, 60])
+        fake_x = random.randint(20, DESIGN_W - hitbox_w - 20)
+        if abs(fake_x - new_x) > 100:
+            platforms.append(Platform(fake_x, fake_y, hitbox_w, hitbox_h, images_dict, fake=True))
+
     return new_x
 
-def spawn_coin(plat):
-    if not plat.fake and random.random() < 0.2:
-        coin_x = plat.rect.centerx - 16
-        coin = Coin(coin_x, 0)
-        visual_top = plat.get_visual_top()
-        coin.y = visual_top - coin.img.get_height() - 4
-        coins.append(coin)
 
 def reset_game():
-    global platforms, score, combo, game_over, floating_texts, player, coins, coin_count
-    platforms = []
-    floating_texts = []
-    coins = []
-    score = 0
-    combo = 0
-    coin_count = 0
-    game_over = False
+    global platforms, coins, score, combo, game_over, floating_texts, player, coin_count, game_speed
+    platforms, coins, floating_texts = [], [], []
+    score = combo = coin_count = 0
+    game_over, game_speed = False, 1.0
 
-    y = 700
-    for _ in range(3):
-        plat = Platform(random.randint(80,220), y, hitbox_width, hitbox_height, images_dict, fake=False)
-        platforms.append(plat)
-        y -= 90
+    platforms.append(Platform(DESIGN_W // 2 - 35, 750, hitbox_w, hitbox_h, images_dict, fake=False))
+    player = Player(platforms[0].rect.centerx - 32, platforms[0].rect.top - 80, menu.selected_character)
+    player.set_sfx_volume(menu.sfx_volume)
 
-    start_x = platforms[0].rect.centerx - 32
-    start_y = platforms[0].rect.top - 64
-    player = Player(start_x, start_y)
-
-    last_x = platforms[-1].rect.x
+    lx, ly = platforms[0].rect.x, 750
     for _ in range(15):
-        y -= random.randint(130,160)
-        last_x = spawn_platform(y, last_x)
+        ly -= random.randint(145, 185)
+        lx = spawn_platform(ly, lx)
+
 
 reset_game()
 
-# игровой цикл
+# -----------------------
+# Основной цикл
+# -----------------------
+soft_x, soft_y = 200, 400
 running = True
+pygame.mouse.set_visible(False)
+
 while running:
-    dt_ms = clock.tick(60)
-    dt = dt_ms / 1000.0
-    events = pygame.event.get()
+    clock.tick(60)
+    sc, ox, oy, sw, sh = compute_scale_and_offset(WIN_W, WIN_H)
+    mx_d, my_d = real_to_design(*pygame.mouse.get_pos(), sc, ox, oy)
 
-    # 1. Получает координаты мыши ОДИН РАЗ за кадр
-    mx_real, my_real = pygame.mouse.get_pos()
-    mx_design, my_design = real_to_design(mx_real, my_real)
-
-    # 2. Единый цикл обработки событий
-    for event in events:
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.VIDEORESIZE:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT: running = False
+        if event.type == pygame.VIDEORESIZE:
             WIN_W, WIN_H = event.w, event.h
             screen = pygame.display.set_mode((WIN_W, WIN_H), pygame.RESIZABLE)
-            scale, offset_x, offset_y, scaled_w, scaled_h = compute_scale_and_offset(WIN_W, WIN_H)
+        menu.handle_event(event, (mx_d, my_d))
+        if game_over and event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                reset_game()
+                if sound.game_music: sound.play_music(sound.game_music)
+            if event.key == pygame.K_ESCAPE: in_menu = True
 
-        # Передает события в меню
-        if in_menu:
-            if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION):
-                menu.handle_event(event, mouse_pos_design=(mx_design, my_design))
-            else:
-                menu.handle_event(event, mouse_pos_design=None)
+    sound.set_music_volume(menu.music_volume)
+    sound.set_sfx_volume(menu.sfx_volume)
 
-    # 3. Плавное движение курсора
-    soft_x += (mx_design - soft_x) * LERP_SPEED
-    soft_y += (my_design - soft_y) * LERP_SPEED
-
-    # --- МЕНЮ И ИГРА ---
     if in_menu:
-        # ЛОГИКА МЕНЮ
-        menu.draw(game_surface, debug=False)
-        sound.play_music(sound.menu_music)  # музыка меню
         if menu.start_game:
-            in_menu = False
+            in_menu = False;
             menu.start_game = False
-            menu.load_layout_if_exists()
-            sound.play_music(sound.game_music)  # запускаем музыку уровня
-            continue
+            reset_game()
+            if sound.game_music: sound.play_music(sound.game_music)
+        game_surface.fill((0, 0, 0));
+        menu.draw(game_surface)
     else:
-        # ВСЯ ИГРОВАЯ ЛОГИКА
-        keys = pygame.key.get_pressed()
-        player.update(keys, DESIGN_W)
-        hitbox = player.get_hitbox()
+        if not game_over:
+            game_speed = min(3.5, 1.0 + (score / 500) * 0.15)
+            keys = pygame.key.get_pressed()
+            player.update(keys, DESIGN_W, game_speed)
 
-        for plat in platforms[:]:
-            if hitbox.colliderect(plat.rect) and player.vel_y > 0:
-                if plat.fake:
-                    platforms.remove(plat)
-                    continue
-                player.jump(plat.rect.top)
-                if not plat.scored:
-                    pts = 1 + combo
-                    score += pts
-                    combo += 1
-                    plat.scored = True
-                    floating_texts.append({"x": plat.rect.centerx, "y": plat.rect.y - 20, "a": 255, "txt": f"+{pts}"})
+            for p in platforms:
+                if hasattr(p, 'update'): p.update(DESIGN_W, game_speed)
 
-        for c in coins:
-            if not c.collected and hitbox.colliderect(c.get_hitbox()):
-                c.collected = True
-                coin_count += 1
-                score += 1
-                floating_texts.append({"x": c.x + 16, "y": c.y - 10, "a": 255, "txt": "+1"})
+            # Обновление монеток (анимация кручения)
+            for c in coins:
+                if not c.collected and hasattr(c, 'update'):
+                    c.update()
 
-        if player.y < camera_trigger_y:
-            diff = camera_trigger_y - player.y
-            player.y = camera_trigger_y
-            for plat in platforms: plat.rect.y += diff
-            for c in coins: c.y += diff
-            for t in floating_texts: t["y"] += diff
+            hb = player.get_hitbox()
+            for p in platforms[:]:
+                if hb.colliderect(p.rect) and player.vel_y > 0:
+                    if p.fake:
+                        platforms.remove(p)
+                        continue
 
-        platforms = [p for p in platforms if p.rect.y < 900]
-        coins = [c for c in coins if c.y < 900]
+                    player.jump(p.rect.top)
+                    current_y = p.rect.y
+                    if not p.scored:
+                        val = 1 + combo;
+                        score += val;
+                        combo += 1;
+                        p.scored = True
+                        floating_texts.append({"x": p.rect.centerx, "y": p.rect.y, "a": 255, "t": f"+{val}"})
+                        platforms = [plat for plat in platforms if plat.rect.y <= current_y + 5]
 
-        while len(platforms) < 12:
-            y = min(p.rect.y for p in platforms) - random.randint(140, 160)
-            spawn_platform(y, platforms[-1].rect.x)
+            for c in coins:
+                if not c.collected and hb.colliderect(c.get_hitbox()):
+                    c.collected = True;
+                    coin_count += 1;
+                    score += 5
+                    floating_texts.append({"x": c.x, "y": c.y, "a": 255, "t": "+5"})
 
-        if player.y > DESIGN_H:
-            game_over = True
-            best_score = max(best_score, score)
-            sound.play_music(sound.menu_music)  # проиграл → музыка меню
+            if player.y < camera_trigger:
+                diff = camera_trigger - player.y;
+                player.y = camera_trigger
+                for p in platforms: p.rect.y += diff
+                for c in coins: c.y += diff
+                for ft in floating_texts: ft["y"] += diff
 
-        # ОТРИСОВКА ИГРЫ
+                platforms = [p for p in platforms if p.rect.y < 1000]
+                coins = [c for c in coins if c.y < 1000]
+
+                while len(platforms) < 16:
+                    spawn_platform(min(p.rect.y for p in platforms) - random.randint(150, 190), platforms[-1].rect.x)
+
+            if player.y > DESIGN_H:
+                game_over = True;
+                best_score = max(best_score, score)
+                if sound.menu_music: sound.play_music(sound.menu_music)
+            if keys[pygame.K_ESCAPE]:
+                in_menu = True
+                if sound.menu_music: sound.play_music(sound.menu_music)
+
+        # -----------------------
+        # РИСОВАНИЕ
+        # -----------------------
         game_surface.blit(bg, (0, 0))
-        for plat in platforms: plat.draw(game_surface, 0)
-        for c in coins: c.draw(game_surface, 0)
+        for p in platforms: p.draw(game_surface)
+        for c in coins:
+            if not c.collected: c.draw(game_surface)
         player.draw(game_surface, 0)
 
-        for t in floating_texts[:]:
-            txt = small_font.render(t["txt"], True, (255, 220, 0))
-            txt.set_alpha(t["a"])
-            game_surface.blit(txt, (t["x"], t["y"]))
-            t["y"] -= 2
-            t["a"] -= 5
-            if t["a"] <= 0: floating_texts.remove(t)
+        for ft in floating_texts[:]:
+            try:
+                txt_img = small_font.render(ft["t"], True, (255, 255, 0))
+                txt_img.set_alpha(ft["a"])
+                game_surface.blit(txt_img, (ft["x"], ft["y"]))
+            except:
+                pass
+            ft["y"] -= 2;
+            ft["a"] -= 5
+            if ft["a"] <= 0: floating_texts.remove(ft)
 
-        # элементы интерфейса
-        coin_text = font.render(f"Coins: {coin_count}", True, (255, 255, 255))
-        game_surface.blit(coin_text, (20, 70))
-        game_surface.blit(font.render(f"Очки: {score}", True, (255, 255, 255)), (10, 10))
-        game_surface.blit(font.render(f"Рекорд: {best_score}", True, (255, 255, 255)), (10, 40))
+
+        # --- ИНТЕРФЕЙС С ТЕНЯМИ ---
+        def draw_text_with_shadow(surf, text, font_obj, color, pos):
+            shadow = font_obj.render(text, True, (0, 0, 0))
+            surf.blit(shadow, (pos[0] + 2, pos[1] + 2))
+            main_t = font_obj.render(text, True, color)
+            surf.blit(main_t, pos)
+
+
+        draw_text_with_shadow(game_surface, f"Очки: {score}", main_font, (255, 255, 255), (20, 20))
+        draw_text_with_shadow(game_surface, f"Рекорд: {best_score}", small_font, (200, 200, 200), (20, 55))
+        draw_text_with_shadow(game_surface, f"Монеты: {coin_count}", small_font, (255, 255, 0), (20, 80))
+        draw_text_with_shadow(game_surface, f"Скорость: x{game_speed:.1f}", small_font, (100, 255, 100), (20, 105))
 
         if game_over:
-            game_surface.blit(font.render("GAME OVER", True, (255, 60, 60)), (110, 300))
-            game_surface.blit(small_font.render("Нажми SPACE чтобы начать заново", True, (255, 255, 255)), (50, 350))
-            game_surface.blit(small_font.render("ESC - в меню", True, (255, 255, 255)), (50, 380))
+            overlay = pygame.Surface((DESIGN_W, DESIGN_H), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 200));
+            game_surface.blit(overlay, (0, 0))
+            over_txt = big_font.render("GAME OVER", True, (255, 50, 50))
+            game_surface.blit(over_txt, over_txt.get_rect(center=(DESIGN_W // 2, DESIGN_H // 2 - 50)))
+            hint = small_font.render("SPACE - Restart | ESC - Menu", True, (255, 255, 255))
+            game_surface.blit(hint, hint.get_rect(center=(DESIGN_W // 2, DESIGN_H // 2 + 20)))
 
-        if keys[pygame.K_ESCAPE]:
-            in_menu = True
-            menu.start_game = False
-            sound.play_music(sound.menu_music)  # ESC → музыка меню
-
-        if game_over and keys[pygame.K_SPACE]:
-            reset_game()
-            sound.play_music(sound.game_music)  # рестарт уровня → музыка уровня
-
-    # --- ФИНАЛЬНЫЙ ВЫВОД НА ЭКРАН ---
-    scaled = pygame.transform.scale(game_surface, (scaled_w, scaled_h))
-    screen.fill((0, 0, 0))
-    screen.blit(scaled, (offset_x, offset_y))
-
-    # Рисует курсор всегда в самом конце
-    cur_x, cur_y = design_to_real(soft_x, soft_y)
-    screen.blit(cursor, (cur_x - 16, cur_y - 16))
-
+    # Масштабирование
+    soft_x += (mx_d - soft_x) * 0.4;
+    soft_y += (my_d - soft_y) * 0.4
+    scaled_surf = pygame.transform.smoothscale(game_surface, (sw, sh))
+    screen.fill((0, 0, 0));
+    screen.blit(scaled_surf, (ox, oy))
+    rx, ry = design_to_real(soft_x, soft_y, sc, ox, oy)
+    screen.blit(cursor_img, (rx - 16, ry - 16))
     pygame.display.flip()
 
 pygame.quit()
-sys.exit()
