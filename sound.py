@@ -9,7 +9,9 @@ def _full(path):
 
 class SoundManager:
     def __init__(self):
-        pygame.mixer.init()
+        # Инициализируем микшер, если он еще не инициализирован
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
 
         # Пути к музыке
         self.menu_music = _full("contents/sound/menu.wav")
@@ -21,9 +23,18 @@ class SoundManager:
         self.music_volume = 1.0
         self.sfx_volume = 1.0
 
-        # Пример SFX
-        self.jump_sound = pygame.mixer.Sound(_full("contents/sound/jumpSound.wav"))
-        self.jump_sound.set_volume(self.sfx_volume)
+        # Загрузка SFX
+        try:
+            self.jump_sound = pygame.mixer.Sound(_full("contents/sound/jumpSound.wav"))
+            self.jump_sound.set_volume(self.sfx_volume)
+        except:
+            print("Предупреждение: jumpSound.wav не найден")
+            self.jump_sound = None
+
+    # НОВЫЙ МЕТОД: для синхронизации со слайдерами из main.py
+    def set_volumes(self, music_vol, sfx_vol):
+        self.set_music_volume(music_vol)
+        self.set_sfx_volume(sfx_vol)
 
     # Воспроизвести музыку, зациклить
     def play_music(self, path):
@@ -32,10 +43,13 @@ class SoundManager:
             if self.current_music == path and pygame.mixer.music.get_busy():
                 return
 
-            pygame.mixer.music.load(path)
-            pygame.mixer.music.play(-1)  # бесконечный цикл
-            pygame.mixer.music.set_volume(self.music_volume)
-            self.current_music = path
+            if os.path.exists(path):
+                pygame.mixer.music.load(path)
+                pygame.mixer.music.play(-1) # бесконечный цикл
+                pygame.mixer.music.set_volume(self.music_volume)
+                self.current_music = path
+            else:
+                print(f"Файл музыки не найден: {path}")
         except Exception as e:
             print("Ошибка загрузки музыки:", e)
 
@@ -47,10 +61,11 @@ class SoundManager:
     # Изменяем громкость звуков
     def set_sfx_volume(self, volume):
         self.sfx_volume = max(0.0, min(1.0, volume))
-        self.jump_sound.set_volume(self.sfx_volume)
+        if self.jump_sound:
+            self.jump_sound.set_volume(self.sfx_volume)
 
     # Воспроизвести эффект
     def play_sfx(self, sfx_sound):
-        if isinstance(sfx_sound, pygame.mixer.Sound):
+        if sfx_sound and isinstance(sfx_sound, pygame.mixer.Sound):
             sfx_sound.set_volume(self.sfx_volume)
             sfx_sound.play()

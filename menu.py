@@ -66,8 +66,8 @@ class Menu:
             bx = start_x + col * spacing
             by = start_y + row * spacing
             btn = Button("contents/buttons/debug.png", (bx, by), (tile_size, tile_size))
-            # ТЕПЕРЬ ТОЛЬКО 1 УРОВЕНЬ АКТИВЕН (i <= 1)
-            self.level_buttons.append({"btn": btn, "num": i, "active": i <= 1})
+            # ТЕПЕРЬ 1 И 2 УРОВНИ АКТИВНЫ (i <= 2)
+            self.level_buttons.append({"btn": btn, "num": i, "active": i <= 2})
 
         # флаги
         self.play_hovered = False
@@ -234,10 +234,9 @@ class Menu:
         if self.level_select_open:
             surface.blit(self.shop_bg, (self.shop_x, self.shop_y))
             self.close_button.draw(surface)
-            # РУССКОЕ НАЗВАНИЕ + ТЕНЬ ДЛЯ ВИДИМОСТИ
             f = pygame.font.Font(None, 60)
             shadow = f.render("ВЫБОР УРОВНЯ", True, (0, 0, 0))
-            surface.blit(shadow, (DESIGN_W // 2 - 148, 152))  # Тень
+            surface.blit(shadow, (DESIGN_W // 2 - 148, 152))
             title = f.render("ВЫБОР УРОВНЯ", True, (255, 255, 255))
             surface.blit(title, (DESIGN_W // 2 - 150, 150))
 
