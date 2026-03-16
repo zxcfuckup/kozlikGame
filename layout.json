@@ -2,69 +2,69 @@
   "PLAY": {
     "image_path": "contents/buttons/PLAY.png",
     "image_center": [
-      264,
-      354
+      287,
+      393
     ],
     "image_size": [
-      414,
-      294
+      486,
+      348
     ],
     "hitbox_rect": [
-      109,
-      258,
-      172,
-      88
+      105,
+      285,
+      196,
+      94
     ]
   },
   "SETTING": {
     "image_path": "contents/buttons/SETTING.png",
     "image_center": [
-      271,
-      354
+      189,
+      384
     ],
     "image_size": [
-      412,
-      338
+      490,
+      380
     ],
     "hitbox_rect": [
-      201,
-      354,
-      84,
-      40
+      106,
+      383,
+      96,
+      46
     ]
   },
   "EXIT": {
     "image_path": "contents/buttons/EXIT.png",
     "image_center": [
-      264,
-      108
+      287,
+      100
     ],
     "image_size": [
-      306,
-      210
+      252,
+      198
     ],
     "hitbox_rect": [
-      338,
-      23,
-      42,
-      42
+      340,
+      13,
+      48,
+      54
     ]
   },
   "SHOP": {
     "image_path": "contents/buttons/SHOP.png",
     "image_center": [
-      293,
-      354
+      410,
+      384
     ],
     "image_size": [
-      496,
-      344
+      556,
+      362
     ],
     "hitbox_rect": [
-      105,
-      354,
-      94,
-      44
+      202,
+      381,
+      100,
+      50
     ]
   },
   "DEBUG": {
@@ -78,8 +78,8 @@
       70
     ],
     "hitbox_rect": [
-      5,
-      5,
+      11,
+      13,
       70,
       70
     ]
@@ -87,35 +87,35 @@
   "LOGO": {
     "image_path": "contents/buttons/logo.png",
     "image_center": [
-      189,
-      194
+      198,
+      212
     ],
     "image_size": [
-      284,
-      242
+      260,
+      200
     ],
     "hitbox_rect": [
-      81,
-      102,
-      230,
-      128
+      95,
+      134,
+      218,
+      116
     ]
   },
   "KOZLIK": {
     "image_path": "contents/buttons/KOZLIKt.png",
     "image_center": [
-      130,
-      517
+      137,
+      520
     ],
     "image_size": [
-      672,
-      432
+      654,
+      420
     ],
     "hitbox_rect": [
-      168,
-      484,
-      222,
-      192
+      185,
+      494,
+      204,
+      180
     ]
   }
 }

@@ -1,6 +1,6 @@
-# layout_editor.py
 import pygame, sys, os
 from menu import Menu, DESIGN_W, DESIGN_H
+import json
 
 pygame.init()
 BASE = os.path.dirname(__file__)
@@ -15,6 +15,9 @@ clock = pygame.time.Clock()
 # поверхность дизайна
 design_surface = pygame.Surface((DESIGN_W, DESIGN_H)).convert_alpha()
 
+LAYOUT_FILE = os.path.join(BASE, "layout.json")
+
+
 def compute_scale_and_offset(window_w, window_h):
     scale = min(window_w / DESIGN_W, window_h / DESIGN_H)
     sw = int(DESIGN_W * scale)
@@ -23,13 +26,17 @@ def compute_scale_and_offset(window_w, window_h):
     oy = (window_h - sh) // 2
     return scale, ox, oy, sw, sh
 
+
 scale, offset_x, offset_y, scaled_w, scaled_h = compute_scale_and_offset(WIN_W, WIN_H)
+
 
 def real_to_design(mx, my):
     return (mx - offset_x) / scale, (my - offset_y) / scale
 
+
 def design_to_real(dx, dy):
-    return int(dx*scale + offset_x), int(dy*scale + offset_y)
+    return int(dx * scale + offset_x), int(dy * scale + offset_y)
+
 
 # меню
 menu = Menu()
@@ -41,12 +48,55 @@ buttons = [
     menu.exit_button,
     menu.shop_button,
     menu.debug_button,
-    menu.logo,      # новая кнопка Logo
-    menu.kozlik     # новая кнопка KOZLIKt
+    menu.logo,  # новая кнопка Logo
+    menu.kozlik  # новая кнопка KOZLIKt
 ]
 
 dragging = None
 preview_horizontal = False
+
+
+def save_layout():
+    """Сохранить layout в JSON (встроенная функция)"""
+    data = {}
+    for btn in buttons:
+        # Определяем ID кнопки
+        btn_id = None
+        if btn == menu.play_button:
+            btn_id = "PLAY"
+        elif btn == menu.settings_button:
+            btn_id = "SETTING"
+        elif btn == menu.exit_button:
+            btn_id = "EXIT"
+        elif btn == menu.shop_button:
+            btn_id = "SHOP"
+        elif btn == menu.debug_button:
+            btn_id = "DEBUG"
+        elif btn == menu.logo:
+            btn_id = "LOGO"
+        elif btn == menu.kozlik:
+            btn_id = "KOZLIK"
+
+        if btn_id:
+            data[btn_id] = {
+                "image_path": btn.image_path if hasattr(btn, 'image_path') else "",
+                "image_center": [btn.rect.centerx, btn.rect.centery],
+                "image_size": [btn.rect.width, btn.rect.height],
+                "hitbox_rect": [
+                    btn.hitbox_rect.x,
+                    btn.hitbox_rect.y,
+                    btn.hitbox_rect.width,
+                    btn.hitbox_rect.height
+                ]
+            }
+
+    try:
+        with open(LAYOUT_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"✓ Сохранено: {LAYOUT_FILE}")
+    except Exception as e:
+        print(f"✗ Ошибка сохранения: {e}")
+
 
 print("Editor running. Controls: SHIFT-image move | CTRL-hitbox move | Shift/CTRL + arrows resize | Ctrl+S save")
 
@@ -61,8 +111,9 @@ while True:
 
     for ev in events:
         if ev.type == pygame.QUIT:
-            menu.save_layout()
-            pygame.quit(); sys.exit()
+            save_layout()
+            pygame.quit();
+            sys.exit()
 
         if ev.type == pygame.VIDEORESIZE:
             WIN_W, WIN_H = ev.w, ev.h
@@ -73,7 +124,7 @@ while True:
             if ev.key == pygame.K_h:
                 preview_horizontal = not preview_horizontal
             if ev.key == pygame.K_s and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-                menu.save_layout()
+                save_layout()
                 print("Saved layout.json")
 
         if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
@@ -82,10 +133,10 @@ while True:
             ctrl = mods & pygame.KMOD_CTRL
 
             for btn in buttons[::-1]:
-                if shift and btn.is_image_hit((mx,my)):
+                if shift and btn.is_image_hit((mx, my)):
                     dragging = (btn, "image", mx, my, btn.rect.x, btn.rect.y)
                     break
-                if ctrl and btn.is_hitbox_hit((mx,my)):
+                if ctrl and btn.is_hitbox_hit((mx, my)):
                     dragging = (btn, "hitbox", mx, my, btn.hitbox_rect.x, btn.hitbox_rect.y)
                     break
 
@@ -114,49 +165,49 @@ while True:
         step = 6
         if keys[pygame.K_UP]:
             for btn in buttons:
-                if btn.is_image_hit((mx,my)):
+                if btn.is_image_hit((mx, my)):
                     btn.resize_image(0, -step)
         if keys[pygame.K_DOWN]:
             for btn in buttons:
-                if btn.is_image_hit((mx,my)):
+                if btn.is_image_hit((mx, my)):
                     btn.resize_image(0, step)
         if keys[pygame.K_RIGHT]:
             for btn in buttons:
-                if btn.is_image_hit((mx,my)):
+                if btn.is_image_hit((mx, my)):
                     btn.resize_image(step, 0)
         if keys[pygame.K_LEFT]:
             for btn in buttons:
-                if btn.is_image_hit((mx,my)):
+                if btn.is_image_hit((mx, my)):
                     btn.resize_image(-step, 0)
     if mods & pygame.KMOD_CTRL:
         # изменение размера хитбокса
         step = 6
         if keys[pygame.K_UP]:
             for btn in buttons:
-                if btn.is_hitbox_hit((mx,my)):
+                if btn.is_hitbox_hit((mx, my)):
                     btn.resize_hitbox(0, -step)
         if keys[pygame.K_DOWN]:
             for btn in buttons:
-                if btn.is_hitbox_hit((mx,my)):
+                if btn.is_hitbox_hit((mx, my)):
                     btn.resize_hitbox(0, step)
         if keys[pygame.K_RIGHT]:
             for btn in buttons:
-                if btn.is_hitbox_hit((mx,my)):
+                if btn.is_hitbox_hit((mx, my)):
                     btn.resize_hitbox(step, 0)
         if keys[pygame.K_LEFT]:
             for btn in buttons:
-                if btn.is_hitbox_hit((mx,my)):
+                if btn.is_hitbox_hit((mx, my)):
                     btn.resize_hitbox(-step, 0)
 
     # рисование на поверхности дизайна
-    design_surface.fill((30,30,30))
+    design_surface.fill((30, 30, 30))
     # фон
     bg_path = os.path.join(BASE, "contents/backgroundsF/menu.jpg")
     if os.path.exists(bg_path):
         try:
             bg = pygame.image.load(bg_path).convert_alpha()
             bg = pygame.transform.smoothscale(bg, (DESIGN_W, DESIGN_H))
-            design_surface.blit(bg, (0,0))
+            design_surface.blit(bg, (0, 0))
         except:
             pass
 
@@ -166,11 +217,11 @@ while True:
         if (btn.rect.width, btn.rect.height) != (btn.image.get_width(), btn.image.get_height()):
             btn.load_image((btn.rect.width, btn.rect.height))
         design_surface.blit(btn.image, btn.rect)
-        pygame.draw.rect(design_surface, (255,0,0), btn.hitbox_rect, 2)
+        pygame.draw.rect(design_surface, (255, 0, 0), btn.hitbox_rect, 2)
 
     # масштабирование для окна и отрисовка
     scaled = pygame.transform.smoothscale(design_surface, (scaled_w, scaled_h))
-    screen.fill((0,0,0))
+    screen.fill((0, 0, 0))
     if preview_horizontal:
         rotated = pygame.transform.rotate(scaled, -90)
         rx, ry = rotated.get_size()
@@ -183,6 +234,6 @@ while True:
     # подсказки сверху (HUD)
     font = pygame.font.Font(None, 20)
     hud = "SHIFT: image move | CTRL: hitbox move | Shift/CTRL + arrows resize | Ctrl+S save | H toggle preview"
-    screen.blit(font.render(hud, True, (255,255,0)), (10,10))
+    screen.blit(font.render(hud, True, (255, 255, 0)), (10, 10))
 
     pygame.display.flip()

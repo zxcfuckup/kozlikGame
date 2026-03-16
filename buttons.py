@@ -65,8 +65,9 @@ class Button:
         self._update_hitbox_from_padding()
 
     def resize_hitbox(self, dw, dh):
-        self.hitbox_rect.width = max(5, int(self.hitbox_rect.width + dw))
-        self.hitbox_rect.height = max(5, int(self.hitbox_rect.height + dh))
+        # dw и dh — это изменение ширины и высоты
+        self.hitbox_rect.width = max(5, self.hitbox_rect.width + dw)
+        self.hitbox_rect.height = max(5, self.hitbox_rect.height + dh)
 
     # сериализация
     def to_dict(self):
